@@ -55,6 +55,9 @@ export const updateRecord = async (req, res) => {
         )
         if (!record)
             res.status(404).json({ message: "Record does not exist" })
+        
+        if (record.createdBy.toString() !== req.user.id)
+            return res.status(403).json({ message: "Not allowed" });
         res.json(record)
     } catch (error) {
         res.status(500).json({ message: error.message });
