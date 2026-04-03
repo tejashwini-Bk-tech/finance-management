@@ -7,7 +7,7 @@ export const testrouter = new Router()
 
 testrouter.get("/admin-only",
     authMiddleware,
-    allowRoles("admin"),
+    allowRoles("admin","viewer"),
 (req,res)=>{
     res.json({message:"welcome admin!!!"})
 })
