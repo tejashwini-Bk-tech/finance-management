@@ -1,7 +1,7 @@
 import record from "../models/record.js";
 
 
-const Record = async (req, res) => {
+export const Records = async (req, res) => {
     try {
         const records = record.find()
         let totalIncome = 0
@@ -52,7 +52,7 @@ export const recentActivity = async (req, res) => {
     }
 }
 
-exports.getMonthlySummary = async (req, res) => {
+export const getMonthlySummary = async (req, res) => {
     try {
         const result = await record.aggregate([
             {
