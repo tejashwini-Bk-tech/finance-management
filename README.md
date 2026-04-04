@@ -14,8 +14,11 @@ A comprehensive backend API for a finance dashboard system with role-based acces
 
 - Create, read, update, delete financial records
 - Support for income and expense tracking
-- Flexible filtering by type, category, and date range
-- Input validation and error handling
+- **Advanced Filtering**: Search by category, type, date range, and keywords
+- **Pagination**: Control record count with page and limit parameters
+- **Sorting**: Sort by any field (amount, date, category) in ascending/descending order
+- **Soft Delete**: Preserve data while marking records as deleted
+- **Input Validation**: Comprehensive validation for all fields
 
 ✅ **Dashboard Analytics**
 
@@ -88,25 +91,10 @@ src/
 
    ```bash
    npm install
+
    ```
 
-3. **Configure environment variables**
-
-   Create a `.env` file in the root directory:
-
-   ```env
-   Mongo_URI=mongodb://localhost:27017/zorvyn
-   JWT_SECRET=your_secret_key_here
-   ```
-
-   For MongoDB Atlas:
-
-   ```env
-   Mongo_URI=mongodb+srv://username:password@cluster.mongodb.net/zorvyn?retryWrites=true&w=majority
-   JWT_SECRET=your_secret_key_here
-   ```
-
-4. **Start the development server**
+3. **Start the development server**
 
    ```bash
    npm run dev
@@ -220,20 +208,38 @@ Authorization: Bearer <token>
 
 - **GET** `/records`
 - **Auth**: Required (All authenticated users)
-- **Query Parameters** (Optional, sent in body):
-  ```json
-  {
-    "type": "income",
-    "category": "Salary",
-    "startDate": "2024-01-01",
-    "endDate": "2024-12-31"
-  }
+- **Query Parameters** (Optional):
+  | Parameter | Type | Default | Description |
+  |-----------|------|---------|-------------|
+  | `page` | number | 1 | Page number for pagination |
+  | `limit` | number | 10 | Records per page (max: 100) |
+  | `sort` | string | date | Sort field (prefix with `-` for descending: `-date`, `-amount`) |
+  | `type` | string | - | Filter by type: "income" or "expenses" |
+  | `category` | string | - | Filter by category (case-insensitive) |
+  | `search` | string | - | Search in category and notes |
+  | `startDate` | date | - | Filter from date (YYYY-MM-DD) |
+  | `endDate` | date | - | Filter to date (YYYY-MM-DD) |
+
+- **Examples**:
+
   ```
+  GET /records?page=1&limit=10                        # Get first 10 records
+  GET /records?sort=-date&limit=5                     # Get latest 5 records
+  GET /records?type=income&sort=-amount               # Get income sorted by amount (desc)
+  GET /records?category=salary&page=2&limit=20        # Search by category with pagination
+  GET /records?search=bonus&sort=date                 # Search records with keyword
+  GET /records?startDate=2024-01-01&endDate=2024-12-31  # Date range filter
+  ```
+
 - **Response** (200):
   ```json
   {
     "success": true,
-    "count": 5,
+    "count": 10,
+    "total": 45,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 5,
     "data": [ ...records ]
   }
   ```
@@ -262,6 +268,7 @@ Authorization: Bearer <token>
 
 - **DELETE** `/records/:id`
 - **Auth**: Required (Admin only, must be creator)
+- **Note**: Uses soft delete (marks as deleted, preserves data)
 - **Response** (200):
   ```json
   {

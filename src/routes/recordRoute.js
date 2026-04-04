@@ -4,9 +4,9 @@ import { createRecord, updateRecord, deleteRecord, getRecord } from "../controll
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { allowRoles } from "../middleware/roleMIddleware.js";
 
-export const Router = new Router()
+export const recordRouter = new Router()
 
-Router.post("/", authMiddleware, allowRoles('admin'), createRecord)
-Router.get('/', authMiddleware, getRecord)
-Router.put('/:id', authMiddleware, allowRoles('admin'), updateRecord)
-Router.delete('/:id', authMiddleware, allowRoles('admin'), deleteRecord)
+recordRouter.post("/", authMiddleware, allowRoles('admin'), createRecord)
+recordRouter.get('/', authMiddleware, getRecord)
+recordRouter.put('/:id', authMiddleware, allowRoles('admin'), updateRecord)
+recordRouter.delete('/:id', authMiddleware, allowRoles('admin'), deleteRecord)
