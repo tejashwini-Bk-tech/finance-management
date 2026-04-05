@@ -1,8 +1,14 @@
 
 import { Router } from "express";
-import { createRecord, updateRecord, deleteRecord, getRecord } from "../controllers/recordController.js"
+
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { allowRoles } from "../middleware/roleMIddleware.js";
+import {
+    getRecord,
+    createRecord,
+    updateRecord,
+    deleteRecord
+} from "../controllers/recordController.js";
 
 export const recordRouter = new Router()
 
