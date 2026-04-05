@@ -1,5 +1,4 @@
 import Record from '../models/record.js'
-import mongoose from 'mongoose'
 
 // Helper function for building filters
 const buildRecordFilter = (userId, query) => {
