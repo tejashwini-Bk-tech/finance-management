@@ -651,6 +651,9 @@ mongo
 - Validate email format and date format
 
 ---
+### Deployment
+
+The backend is deployed using Render and connected to MongoDB Atlas for cloud-based data persistence.
 
 ## License
 
