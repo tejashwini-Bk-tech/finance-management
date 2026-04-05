@@ -15,16 +15,28 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    role:{
+    role: {
         type: String,
-        enum:["admin", "analyst", "viewer"],
-        default:"viewer"
+        enum: ["admin", "analyst", "viewer"],
+        default: "viewer"
     },
-    isActive:{
-        type:Boolean,
-        default:true
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: {
+        type: String,
+        default: null
+    },
+    verificationTokenExpiry: {
+        type: Date,
+        default: null
     }
-}, 
-{timestamps:true})
+},
+    { timestamps: true })
 
 export default mongoose.model("User", userSchema)

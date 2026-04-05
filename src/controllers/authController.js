@@ -1,10 +1,16 @@
 import User from '../models/user.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { sendVerificationEmail, sendWelcomeEmail } from '../services/emailService.js'
+import crypto from 'crypto'
 
 const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
+}
+
+const generateVerificationToken = () => {
+    return crypto.randomBytes(32).toString('hex');
 }
 
 export const register = async (req, res) => {
@@ -33,10 +39,14 @@ export const register = async (req, res) => {
             })
         }
 
-        if (role && !["admin", "analyst", "viewer"].includes(role)) {
+        // Validate role - only analyst and viewer can self-register
+        const validRoles = ["analyst", "viewer"]
+        const userRole = role || "viewer" // Default to viewer
+
+        if (!validRoles.includes(userRole)) {
             return res.status(400).json({
                 success: false,
-                message: "role must be 'admin', 'analyst', or 'viewer'"
+                message: "role must be 'analyst' or 'viewer'. Admin role is not available for self-registration."
             })
         }
 
@@ -50,22 +60,48 @@ export const register = async (req, res) => {
         }
 
         const hashPassword = await bcrypt.hash(password, 10)
+        const verificationToken = generateVerificationToken()
+        const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
         const user = await User.create({
             name,
             email,
             password: hashPassword,
-            role: role || "viewer",
-            isActive: true
+            role: userRole,
+            isActive: true,
+            isVerified: false,
+            verificationToken,
+            verificationTokenExpiry
         })
+
+        // Send verification email
+        const emailResult = await sendVerificationEmail(email, verificationToken, name)
+
+        if (!emailResult.success) {
+            // Email sending failed, but user was created
+            console.error('Failed to send verification email:', emailResult.error)
+            return res.status(201).json({
+                success: true,
+                message: "user created but verification email could not be sent",
+                data: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    isVerified: user.isVerified
+                }
+            })
+        }
 
         return res.status(201).json({
             success: true,
-            message: "user created successfully",
+            message: "user created successfully. Check your email to verify your account.",
             data: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                isVerified: user.isVerified
             }
         })
     } catch (error) {
@@ -105,6 +141,13 @@ export const login = async (req, res) => {
             })
         }
 
+        if (!user.isVerified) {
+            return res.status(403).json({
+                success: false,
+                message: "please verify your email before logging in"
+            })
+        }
+
         const passwordMatch = await bcrypt.compare(password, user.password)
 
         if (!passwordMatch) {
@@ -135,6 +178,71 @@ export const login = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "error during login",
+            error: error.message
+        })
+    }
+}
+
+export const verifyEmail = async (req, res) => {
+    try {
+        const { token, email } = req.query
+
+        if (!token || !email) {
+            return res.status(400).json({
+                success: false,
+                message: "verification token and email are required"
+            })
+        }
+
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "user not found"
+            })
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({
+                success: false,
+                message: "email already verified"
+            })
+        }
+
+        // Check if token matches
+        if (user.verificationToken !== token) {
+            return res.status(400).json({
+                success: false,
+                message: "invalid verification token"
+            })
+        }
+
+        // Check if token has expired
+        if (new Date() > user.verificationTokenExpiry) {
+            return res.status(400).json({
+                success: false,
+                message: "verification token has expired"
+            })
+        }
+
+        // Mark email as verified
+        user.isVerified = true
+        user.verificationToken = null
+        user.verificationTokenExpiry = null
+        await user.save()
+
+        // Send welcome email
+        await sendWelcomeEmail(email, user.name)
+
+        return res.json({
+            success: true,
+            message: "email verified successfully. You can now log in."
+        })
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "error verifying email",
             error: error.message
         })
     }
