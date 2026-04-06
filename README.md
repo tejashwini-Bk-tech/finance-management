@@ -9,10 +9,8 @@ A comprehensive backend API for a finance dashboard system with role-based acces
 - Support for multiple roles: Admin, Analyst, Viewer
 - User status management (active/inactive)
 - JWT-based authentication
-- **Email Verification**: Automatic verification link sent to email upon registration
-- Email verification required before login
 - **Admin Setup**: Pre-configured admin credentials (no registration needed)
-- **Analyst & Viewer Self-Registration**: Users can register themselves with email verification
+- **Analyst & Viewer Self-Registration**: Users can register and login immediately
 
 ✅ **Financial Records Management**
 
@@ -45,7 +43,7 @@ A comprehensive backend API for a finance dashboard system with role-based acces
 - **Database**: MongoDB with Mongoose
 - **Authentication**: JWT (JSON Web Tokens)
 - **Password Hashing**: bcryptjs
-- **Email Service**: Nodemailer (Gmail SMTP)
+- **Email Service**: Resend
 - **Dev Tools**: Nodemon
 
 ## Project Structure
@@ -115,19 +113,17 @@ src/
    # Server
    PORT=3000
 
-   # SMTP Configuration for Email Verification
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_SECURE=false
-   SMTP_USER=your_email@gmail.com
-   SMTP_PASS=your_app_password_here
-   FROM_EMAIL=ProManager your_email@gmail.com
+   # Resend Email Configuration
+   RESEND_API_KEY=your_resend_api_key
+   FROM_EMAIL=ProManager <noreply@yourdomain.com>
 
-   # Application URL (for email verification links)
+   # Application URL
    APP_URL=http://localhost:3000
    ```
 
-   **Note for Gmail**: Use [Gmail App Passwords](https://support.google.com/accounts/answer/185833) instead of your regular Gmail password.
+   **Note**:
+   - Get your Resend API key from [Resend Dashboard](https://resend.com)
+   - Update `FROM_EMAIL` with your verified domain in Resend
 
 4. **Setup Admin User**
 
@@ -173,7 +169,9 @@ src/
 │  ├─ Endpoint: POST /api/auth/register              │
 │  ├─ Body: {"name", "email", "password", role: "analyst"}   │
 │  ├─ Role: analyst                                  │
-│  ├─ Email verification required (24-hour link)     │
+│  ├─ Email verification required (24-hour link)     ││
+│  ├─ Role: analyst                                  │
+│  ├─ Can login immediately after registration       │
 │  ├─ Can create, view, and manage records           │
 │  └─ Access full analytics dashboard                │
 │                                                     │
@@ -181,11 +179,9 @@ src/
 │  ├─ Users can register themselves                  │
 │  ├─ Endpoint: POST /api/auth/register              │
 │  ├─ Body: {"name", "email", "password"} OR         │
-│  │        {"name", "email", "password", role: "viewer"}   │
+│  │        {"name", "email", "password", role: "viewer"}  │
 │  ├─ Role: viewer (default if not specified)        │
-│  ├─ Email verification required (24-hour link)     │
-│  ├─ Can view dashboard analytics only              │
-│  └─ Read-only access to reports                    │
+│  ├─ Can login immediately after registration       │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```
@@ -210,19 +206,17 @@ src/
    - Choose role: `"analyst"` in request body
    - Email verification link sent automatically
    - Must click link or verify manually
-   - After verification, can login and create records
+   - Can login immediately after registration
+   - Can create records
 
 4. **Viewer Registration**
    - Register via POST `/api/auth/register`
    - Choose role: `"viewer"` (or omit for default viewer role)
-   - Email verification link sent automatically
-   - Must click link or verify manually
-   - After verification, can login and view dashboard analytics
+   - Can login immediately after registration
+   - Can view dashboard analytics
 
 5. **Login**
-   - Submit verified email and password
-   - Receives JWT token
-   - Access level based on assigned role
+   - Submitsed on assigned role
 
 ## API Documentation
 
@@ -279,57 +273,19 @@ Admin users receive credentials directly via the setup script. No registration r
     "success": true,
     "message": "user created successfully. Check your email to verify your account.",
     "data": {
+      "id": "user_id",",
+    "data": {
       "id": "user_id",
       "name": "John User",
       "email": "john@example.com",
-      "role": "analyst",
-      "isVerified": false
+      "role": "analyst"
     }
   }
   ```
 
 - **Notes**:
-  - A verification email will be automatically sent to the provided email address
-  - User must verify their email before they can log in
-  - Verification link expires in 24 hours
-  - Admin accounts can only be created via `npm run setup-admin`
-
-### Verify Email
-
-- **GET** `/auth/verify-email`
-- **Auth**: Not required
-- **Query Parameters**:
-  | Parameter | Type | Required | Description |
-  |-----------|------|----------|-------------|
-  | `token` | string | Yes | Verification token from email |
-  | `email` | string | Yes | User email address |
-
-- **Example**:
-
-  ```
-  GET /auth/verify-email?token=abc123xyz&email=john@example.com
-  ```
-
-- **Response** (200):
-
-  ```json
-  {
-    "success": true,
-    "message": "email verified successfully. You can now log in."
-  }
-  ```
-
-- **Error Responses**:
-  - Invalid token: `400 Bad Request`
-  - Expired token: `400 Bad Request - "verification token has expired"`
-  - Email not found: `404 Not Found`
-
-- **Notes**:
-  - This endpoint is called automatically when user clicks the link in verification email
-  - A welcome email is sent after successful verification
-  - Token expires 24 hours after registration
-
-### Login
+  - User can login immediately after registration
+  - No email verification required
 
 - **POST** `/auth/login`
 - **Auth**: Not required
