@@ -1264,4 +1264,4 @@ ISC License
 
 ## Support
 
-For issues or questions, please create an issue in the repository or contact the development team.
+For issues or questions, please create an issue in the repository or contact me.
