@@ -1,4 +1,4 @@
-import transporter from '../config/email.js';
+import resend from '../config/email.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,7 +7,7 @@ export const sendVerificationEmail = async (email, verificationToken, userName) 
     try {
         const verificationLink = `${process.env.APP_URL || 'http://localhost:3000'}/api/auth/verify-email?token=${verificationToken}&email=${email}`;
 
-        const mailOptions = {
+        const result = await resend.emails.send({
             from: process.env.FROM_EMAIL,
             to: email,
             subject: 'Email Verification - ProManager',
@@ -33,11 +33,10 @@ export const sendVerificationEmail = async (email, verificationToken, userName) 
                     </div>
                 </div>
             `
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Verification email sent:', info.response);
-        return { success: true, messageId: info.messageId };
+        console.log('Verification email sent:', result);
+        return { success: true, messageId: result.id };
     } catch (error) {
         console.error('Error sending verification email:', error);
         return { success: false, error: error.message };
@@ -46,7 +45,7 @@ export const sendVerificationEmail = async (email, verificationToken, userName) 
 
 export const sendWelcomeEmail = async (email, userName) => {
     try {
-        const mailOptions = {
+        const result = await resend.emails.send({
             from: process.env.FROM_EMAIL,
             to: email,
             subject: 'Welcome to ProManager!',
@@ -63,11 +62,10 @@ export const sendWelcomeEmail = async (email, userName) => {
                     </div>
                 </div>
             `
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Welcome email sent:', info.response);
-        return { success: true, messageId: info.messageId };
+        console.log('Welcome email sent:', result);
+        return { success: true, messageId: result.id };
     } catch (error) {
         console.error('Error sending welcome email:', error);
         return { success: false, error: error.message };
